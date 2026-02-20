@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { ToolDefinition, ToolContext, createToolResult, createErrorResult } from '../server/mcp-server';
 import { GrafanaClient } from '../clients/grafana-client';
-import * as jsonpath from 'jsonpath';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const jsonpath = require('jsonpath');
 
 // Schema definitions
 const GetDashboardByUidSchema = z.object({
