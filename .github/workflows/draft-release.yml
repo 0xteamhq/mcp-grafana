@@ -1,84 +1,110 @@
-name: Draft Release
+name: Release
 
 on:
   push:
     branches:
       - main
-      - develop
 
 permissions:
   contents: write
   pull-requests: read
 
 jobs:
-  draft-release:
+  release:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+          # Use a PAT so the version-bump commit can trigger downstream workflows.
+          # Falls back to GITHUB_TOKEN if the secret is not set.
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure Git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Build package
+
+      - name: Determine bump type from conventional commits
+        id: bump-type
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s" --no-merges)
+          else
+            COMMITS=$(git log "$LAST_TAG..HEAD" --pretty=format:"%s" --no-merges)
+          fi
+
+          # Breaking change → major; feat → minor; everything else → patch
+          if echo "$COMMITS" | grep -qE '^[a-z]+(\(.+\))?!:'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$COMMITS" | grep -qE '^feat(\(.+\))?:'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version
+        id: version
+        run: |
+          npm version ${{ steps.bump-type.outputs.type }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Keep the CLI --version flag in sync
+          sed -i "s/\.version('[^']*')/\.version('$NEW_VERSION')/" src/cli.ts
+
+      - name: Build
         run: npm run build
-      
-      - name: Run tests
-        run: npm test || true  # Don't fail on test errors for draft
-      
-      - name: Get version from package.json
-        id: package-version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-      
+
+      - name: Test
+        run: npm test
+
       - name: Generate changelog
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          skip-version-file: true
-          skip-commit: true
-          skip-tag: true
-          output-file: false
-      
-      - name: Create or Update Draft Release
-        uses: softprops/action-gh-release@v1
+          output-file: CHANGELOG.md
+          skip-version-file: true  # already bumped above
+          skip-commit: true        # we commit everything together below
+          skip-tag: true           # we tag after the commit below
+          skip-on-empty: false
+
+      - name: Commit, tag, and push
+        run: |
+          git add package.json package-lock.json src/cli.ts CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
+          git tag -a "v${{ steps.version.outputs.new_version }}" \
+            -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin main --follow-tags
+
+      - name: Pack npm tarball
+        run: npm pack
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          draft: true
-          prerelease: ${{ github.event_name == 'pull_request' }}
-          tag_name: v${{ steps.package-version.outputs.version }}-draft-${{ github.sha }}
-          name: "Draft Release v${{ steps.package-version.outputs.version }}"
-          body: |
-            ## 📦 Draft Release
-            
-            **Version**: v${{ steps.package-version.outputs.version }}
-            **Branch**: ${{ github.ref_name }}
-            **Commit**: ${{ github.sha }}
-            
-            ### 📝 Changelog
-            ${{ steps.changelog.outputs.clean_changelog }}
-            
-            ### 🚀 Installation
-            ```bash
-            # Once published to npm:
-            npm install -g @leval/mcp-grafana@${{ steps.package-version.outputs.version }}
-            
-            # Or use with npx:
-            npx @leval/mcp-grafana@${{ steps.package-version.outputs.version }}
-            ```
-            
-            ### ⚠️ Note
-            This is a draft release. It will be published when ready.
-            
-            ---
-            *This draft was automatically generated from ${{ github.event_name == 'pull_request' && 'PR #' || 'commit ' }}${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}*
-          files: |
-            leval-mcp-grafana-*.tgz
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: v${{ steps.version.outputs.new_version }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+          draft: false
+          prerelease: false
+          files: '*.tgz'
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
