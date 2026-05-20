@@ -129,18 +129,10 @@ export const listPrometheusMetricNames: ToolDefinition = {
   handler: async (params, context: ToolContext) => {
     try {
       const client = new PrometheusClient(context.config.grafanaConfig, params.datasourceUid);
-      
-      // Get all series to extract metric names
-      const series = await client.getSeries(['__name__=~".+"']);
-      const metricNames = new Set<string>();
-      
-      for (const s of series) {
-        if (s.__name__) {
-          metricNames.add(s.__name__);
-        }
-      }
-      
-      let names = Array.from(metricNames).sort();
+
+      // Use /api/v1/label/__name__/values — purpose-built for this, orders of
+      // magnitude cheaper than /api/v1/series?match[]={__name__=~".+"}
+      let names = (await client.getLabelValues('__name__')).sort();
       
       // Apply regex filter if provided
       if (params.regex) {

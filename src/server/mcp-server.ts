@@ -147,8 +147,17 @@ export class MCPServer {
       }
 
       try {
-        // Validate input
-        const validatedArgs = tool.inputSchema.parse(args);
+        // Claude Code (and some other clients) wrap arguments in an extra
+        // "params" key: { params: { uid: "..." } }. Unwrap it when that's
+        // the only non-meta key so both formats work transparently.
+        const rawArgs = (
+          args &&
+          typeof args === 'object' &&
+          'params' in args &&
+          Object.keys(args).filter(k => k !== '_meta').length === 1
+        ) ? (args as any).params : args;
+
+        const validatedArgs = tool.inputSchema.parse(rawArgs);
 
         // --- Dry-run mode ---
         if (isWrite && gov.dryRun) {
