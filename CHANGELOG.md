@@ -1,3 +1,12 @@
+## [1.1.6](https://github.com/levalhq/mcp-grafana/compare/v1.1.5...v1.1.6) (2026-05-20)
+
+
+### Reverts
+
+* Revert "fix: use default import for jsonpath to preserve prototype methods" ([e8c43ab](https://github.com/levalhq/mcp-grafana/commit/e8c43abd0f4606a8134b2d211e81e3f418ccc689))
+
+
+
 ## [1.1.5](https://github.com/levalhq/mcp-grafana/compare/v1.1.4...v1.1.5) (2026-05-20)
 
 
@@ -21,10 +30,6 @@
 
 
 ## [1.1.2](https://github.com/levalhq/mcp-grafana/compare/v1.1.1...v1.1.2) (2026-05-20)
-
-
-
-## [1.1.1](https://github.com/levalhq/mcp-grafana/compare/v1.1.0...v1.1.1) (2026-05-20)
 
 
 
