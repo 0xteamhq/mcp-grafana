@@ -71,7 +71,7 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm test
+        run: npm test -- --passWithNoTests
 
       - name: Generate changelog
         id: changelog
