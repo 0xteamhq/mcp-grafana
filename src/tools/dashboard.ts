@@ -133,6 +133,7 @@ export const getDashboardPanelQueries: ToolDefinition = {
 export const updateDashboard: ToolDefinition = {
   name: 'update_dashboard',
   description: 'Create or update a dashboard using either full JSON or efficient patch operations',
+  isWrite: true,
   inputSchema: UpdateDashboardSchema,
   handler: async (params, context: ToolContext) => {
     try {

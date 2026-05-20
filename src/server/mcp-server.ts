@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { 
-  ListToolsRequestSchema, 
+import {
+  ListToolsRequestSchema,
   CallToolRequestSchema,
   Tool,
   CallToolResult,
@@ -11,12 +11,16 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import pino from 'pino';
 import { ServerConfig } from '../types/config';
+import { AuditLogger } from '../governance/audit-logger';
+import { RateLimiter } from '../governance/rate-limiter';
 
 export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: z.ZodType<any>;
   handler: (params: any, context: ToolContext) => Promise<CallToolResult>;
+  /** Mark as true for any tool that mutates state in Grafana. */
+  isWrite?: boolean;
 }
 
 export interface ToolContext {
@@ -29,6 +33,8 @@ export class MCPServer {
   private tools: Map<string, ToolDefinition> = new Map();
   private config: ServerConfig;
   private logger: pino.Logger;
+  private auditLogger?: AuditLogger;
+  private rateLimiter?: RateLimiter;
 
   constructor(config: ServerConfig) {
     this.config = config;
@@ -41,6 +47,13 @@ export class MCPServer {
         }
       } : undefined
     });
+
+    if (config.governance.auditLogFile) {
+      this.auditLogger = new AuditLogger(config.governance.auditLogFile);
+    }
+    if (config.governance.writeRateLimit != null && config.governance.writeRateLimit > 0) {
+      this.rateLimiter = new RateLimiter(config.governance.writeRateLimit);
+    }
 
     this.server = new Server(
       {
@@ -84,7 +97,8 @@ export class MCPServer {
     // Call tool handler
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
+      const startMs = Date.now();
+
       const tool = this.tools.get(name);
       if (!tool) {
         throw new Error(`Tool "${name}" not found`);
@@ -96,10 +110,62 @@ export class MCPServer {
         throw new Error(`Tool category "${category}" is not enabled`);
       }
 
+      const isWrite = !!tool.isWrite;
+      const gov = this.config.governance;
+
+      // --- Read-only mode ---
+      if (isWrite && gov.readOnly) {
+        const msg = `Tool "${name}" is a write operation and the server is running in read-only mode.`;
+        this.auditLogger?.log({
+          timestamp: new Date().toISOString(),
+          tool: name,
+          isWrite,
+          dryRun: false,
+          args: (args ?? {}) as Record<string, unknown>,
+          status: 'blocked',
+          durationMs: Date.now() - startMs,
+          error: msg,
+        });
+        return createErrorResult(msg);
+      }
+
+      // --- Rate limiting ---
+      if (isWrite && this.rateLimiter && !this.rateLimiter.allow()) {
+        const retry = this.rateLimiter.retryAfterSeconds();
+        const msg = `Write rate limit exceeded. Retry after ${retry}s.`;
+        this.auditLogger?.log({
+          timestamp: new Date().toISOString(),
+          tool: name,
+          isWrite,
+          dryRun: gov.dryRun,
+          args: (args ?? {}) as Record<string, unknown>,
+          status: 'blocked',
+          durationMs: Date.now() - startMs,
+          error: msg,
+        });
+        return createErrorResult(msg);
+      }
+
       try {
         // Validate input
         const validatedArgs = tool.inputSchema.parse(args);
-        
+
+        // --- Dry-run mode ---
+        if (isWrite && gov.dryRun) {
+          const preview = JSON.stringify(validatedArgs, null, 2);
+          const msg = `[DRY RUN] Tool "${name}" would execute with arguments:\n${preview}`;
+          this.auditLogger?.log({
+            timestamp: new Date().toISOString(),
+            tool: name,
+            isWrite,
+            dryRun: true,
+            args: validatedArgs as Record<string, unknown>,
+            status: 'dry_run',
+            durationMs: Date.now() - startMs,
+          });
+          return createToolResult(msg);
+        }
+
         // Execute tool handler
         const context: ToolContext = {
           config: this.config,
@@ -107,12 +173,32 @@ export class MCPServer {
         };
 
         const result = await tool.handler(validatedArgs, context);
-        
+
+        this.auditLogger?.log({
+          timestamp: new Date().toISOString(),
+          tool: name,
+          isWrite,
+          dryRun: false,
+          args: validatedArgs as Record<string, unknown>,
+          status: 'success',
+          durationMs: Date.now() - startMs,
+        });
+
         return result;
       } catch (error) {
         if (error instanceof z.ZodError) {
           throw new Error(`Invalid arguments for tool "${name}": ${error.message}`);
         }
+        this.auditLogger?.log({
+          timestamp: new Date().toISOString(),
+          tool: name,
+          isWrite,
+          dryRun: gov.dryRun,
+          args: (args ?? {}) as Record<string, unknown>,
+          status: 'error',
+          durationMs: Date.now() - startMs,
+          error: (error as Error).message,
+        });
         throw error;
       }
     });

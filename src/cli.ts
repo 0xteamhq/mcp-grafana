@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { MCPServer } from './server/mcp-server';
-import { ServerConfig } from './types/config';
+import { GovernanceConfig, ServerConfig } from './types/config';
 import { loadGrafanaConfig, validateGrafanaConfig } from './config/environment';
 import { TOOL_CATEGORIES } from './types';
 
@@ -49,6 +49,13 @@ program
   .option('--grafana-token <token>', 'Grafana service account token (overrides env var)')
   .option('--debug', 'Enable debug logging', false);
 
+// Governance options
+program
+  .option('--read-only', 'Block all write operations', false)
+  .option('--dry-run', 'Show what write operations would do without executing them', false)
+  .option('--audit-log <file>', 'Path to write audit log (JSONL format)')
+  .option('--write-rate-limit <n>', 'Max write operations per minute (0 = unlimited)', '0');
+
 // Parse command line arguments
 program.parse();
 const options = program.opts();
@@ -81,6 +88,15 @@ async function main() {
       }
     });
     
+    // Build governance config
+    const writeRateLimit = parseInt(options.writeRateLimit ?? '0', 10);
+    const governance: GovernanceConfig = {
+      readOnly: !!options.readOnly,
+      dryRun: !!options.dryRun,
+      auditLogFile: options.auditLog,
+      writeRateLimit: writeRateLimit > 0 ? writeRateLimit : undefined,
+    };
+
     // Create server configuration
     const serverConfig: ServerConfig = {
       transport: options.transport as 'stdio' | 'sse' | 'streamable-http',
@@ -89,6 +105,7 @@ async function main() {
       path: options.path,
       enabledTools,
       grafanaConfig: validatedConfig,
+      governance,
     };
     
     // Create and configure server
@@ -150,6 +167,10 @@ async function main() {
     // Start the server
     console.log(`Starting MCP Grafana server with ${options.transport} transport...`);
     console.log(`Enabled tool categories: ${Array.from(enabledTools).join(', ')}`);
+    if (governance.readOnly) console.log('Governance: read-only mode enabled — all write operations blocked');
+    if (governance.dryRun) console.log('Governance: dry-run mode enabled — write operations will be previewed, not executed');
+    if (governance.auditLogFile) console.log(`Governance: audit log → ${governance.auditLogFile}`);
+    if (governance.writeRateLimit) console.log(`Governance: write rate limit → ${governance.writeRateLimit} ops/min`);
     
     await server.start();
     

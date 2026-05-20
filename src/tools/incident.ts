@@ -111,6 +111,7 @@ export const getIncident: ToolDefinition = {
 export const createIncident: ToolDefinition = {
   name: 'create_incident',
   description: 'Create a new Grafana incident. Requires title, severity, and room prefix',
+  isWrite: true,
   inputSchema: CreateIncidentSchema,
   handler: async (params, context: ToolContext) => {
     try {
@@ -156,6 +157,7 @@ export const createIncident: ToolDefinition = {
 export const addActivityToIncident: ToolDefinition = {
   name: 'add_activity_to_incident',
   description: 'Add a note (userNote activity) to an existing incident\'s timeline',
+  isWrite: true,
   inputSchema: AddActivityToIncidentSchema,
   handler: async (params, context: ToolContext) => {
     try {

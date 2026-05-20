@@ -1,0 +1,50 @@
+{
+  "uid": "mcp-sample",
+  "title": "MCP Sample Dashboard",
+  "tags": ["mcp", "sample"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Prometheus Scrape Duration",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "scrape_duration_seconds",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Up Targets",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "count(up == 1)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Prometheus Samples Ingested/s",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(prometheus_tsdb_head_samples_appended_total[1m])",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s"
+}
