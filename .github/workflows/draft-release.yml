@@ -23,7 +23,12 @@ jobs:
           # Falls back to GITHUB_TOKEN if the secret is not set.
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js (npm registry auth for publish)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -35,23 +40,29 @@ jobs:
           git config user.name "github-actions[bot]"
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Bump version
         id: version
         run: |
-          npm version patch --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          NEW_VERSION=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json'));
+            const [ma, mi, pa] = pkg.version.split('.').map(Number);
+            pkg.version = \`\${ma}.\${mi}.\${pa + 1}\`;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log(pkg.version);
+          ")
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
           # Keep the CLI --version flag in sync
           sed -i "s/\.version('[^']*')/\.version('$NEW_VERSION')/" src/cli.ts
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Test
-        run: npm test -- --passWithNoTests
+        run: bun run test -- --passWithNoTests
 
       - name: Generate changelog
         id: changelog
