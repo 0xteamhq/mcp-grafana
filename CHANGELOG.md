@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/levalhq/mcp-grafana/compare/v1.0.3...v1.1.0) (2026-05-20)
+
+
+### Features
+
+* governance controls, Docker Compose, and package improvements ([#5](https://github.com/levalhq/mcp-grafana/issues/5)) ([1aed6af](https://github.com/levalhq/mcp-grafana/commit/1aed6af5fb42584597a5222de1af035e93b0ae7c))
+
+
+
 ## [1.0.3](https://github.com/levalhq/mcp-grafana/compare/v1.0.2...v1.0.3) (2025-09-15)
 
 
