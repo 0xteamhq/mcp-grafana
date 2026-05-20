@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ToolDefinition, ToolContext, createToolResult, createErrorResult } from '../server/mcp-server';
 import { GrafanaClient } from '../clients/grafana-client';
-import * as jsonpath from 'jsonpath';
+import jsonpath from 'jsonpath';
 
 // Schema definitions
 const GetDashboardByUidSchema = z.object({
