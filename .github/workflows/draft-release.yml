@@ -35,7 +35,7 @@ jobs:
           git config user.name "github-actions[bot]"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Bump version
         id: version
