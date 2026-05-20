@@ -127,6 +127,7 @@ export const getSiftAnalysis: ToolDefinition = {
 export const findSlowRequests: ToolDefinition = {
   name: 'find_slow_requests',
   description: 'Searches relevant Tempo datasources for slow requests and returns the results',
+  isWrite: true,
   inputSchema: FindSlowRequestsSchema,
   handler: async (params, context: ToolContext) => {
     try {
@@ -171,6 +172,7 @@ export const findSlowRequests: ToolDefinition = {
 export const findErrorPatternLogs: ToolDefinition = {
   name: 'find_error_pattern_logs',
   description: 'Searches Loki logs for elevated error patterns and returns the results',
+  isWrite: true,
   inputSchema: FindErrorPatternLogsSchema,
   handler: async (params, context: ToolContext) => {
     try {

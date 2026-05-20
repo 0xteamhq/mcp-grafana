@@ -8,7 +8,7 @@
     "mcp-grafana": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/cli.ts",
     "start": "node dist/cli.js",
     "test": "jest",
@@ -37,7 +37,7 @@
     "observability"
   ],
   "author": "Grafana Labs",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
     "axios": "^1.7.9",

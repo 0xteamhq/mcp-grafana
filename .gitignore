@@ -1,17 +1,34 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
+# Build output
 dist/
-wheels/
-*.egg-info
+build/
+
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+.envrc
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Docker runtime data
+docker/grafana/data/
+docker/prometheus/data/
+
+# OS & editor
 .DS_Store
 .vscode/
-.env
 .cursor/
+.idea/
 
-# Virtual environments
-.venv
-.envrc
-.env
+# Misc
 **leval-mcp-grafana-**
