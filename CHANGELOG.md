@@ -1,3 +1,12 @@
+## [1.1.3](https://github.com/levalhq/mcp-grafana/compare/v1.1.2...v1.1.3) (2026-05-20)
+
+
+### Bug Fixes
+
+* resolve issues [#3](https://github.com/levalhq/mcp-grafana/issues/3) and [#4](https://github.com/levalhq/mcp-grafana/issues/4) ([#6](https://github.com/levalhq/mcp-grafana/issues/6)) ([aeb8faa](https://github.com/levalhq/mcp-grafana/commit/aeb8faae1b3d4411946b5714c0e67011d6d92f97))
+
+
+
 ## [1.1.2](https://github.com/levalhq/mcp-grafana/compare/v1.1.1...v1.1.2) (2026-05-20)
 
 
@@ -21,15 +30,6 @@
 ### Bug Fixes
 
 * add package-lock.json for CI/CD workflows ([d44b7f1](https://github.com/levalhq/mcp-grafana/commit/d44b7f190487d8ca930079a9a8af72ef75a77e95))
-
-
-
-## [1.0.2](https://github.com/levalhq/mcp-grafana/compare/81c1fb689738dcf8d7b03704cdfc78b8b7d2d649...v1.0.2) (2025-09-12)
-
-
-### Features
-
-* Complete TypeScript/JavaScript migration with npm package ([81c1fb6](https://github.com/levalhq/mcp-grafana/commit/81c1fb689738dcf8d7b03704cdfc78b8b7d2d649))
 
 
 
