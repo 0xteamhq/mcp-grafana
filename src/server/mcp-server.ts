@@ -146,17 +146,21 @@ export class MCPServer {
         return createErrorResult(msg);
       }
 
-      try {
-        // Claude Code (and some other clients) wrap arguments in an extra
-        // "params" key: { params: { uid: "..." } }. Unwrap it when that's
-        // the only non-meta key so both formats work transparently.
-        const rawArgs = (
-          args &&
-          typeof args === 'object' &&
-          'params' in args &&
-          Object.keys(args).filter(k => k !== '_meta').length === 1
-        ) ? (args as any).params : args;
+      // Claude Code (and some other clients) wrap arguments in an extra
+      // "params" key: { params: { uid: "..." } }. Unwrap when params is the
+      // only non-meta key so both formats work transparently.
+      //
+      // NOTE for tool authors: do NOT define a schema whose sole top-level
+      // field is named "params" — the unwrap heuristic will misfire and
+      // treat the value of that field as the full arguments object.
+      const rawArgs = (
+        args &&
+        typeof args === 'object' &&
+        'params' in args &&
+        Object.keys(args).filter(k => k !== '_meta').length === 1
+      ) ? (args as any).params : args;
 
+      try {
         const validatedArgs = tool.inputSchema.parse(rawArgs);
 
         // --- Dry-run mode ---
@@ -203,7 +207,7 @@ export class MCPServer {
           tool: name,
           isWrite,
           dryRun: gov.dryRun,
-          args: (args ?? {}) as Record<string, unknown>,
+          args: (rawArgs ?? {}) as Record<string, unknown>,
           status: 'error',
           durationMs: Date.now() - startMs,
           error: (error as Error).message,
