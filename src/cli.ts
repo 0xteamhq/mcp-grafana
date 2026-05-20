@@ -26,7 +26,7 @@ const program = new Command();
 program
   .name('mcp-grafana')
   .description('Model Context Protocol server for Grafana')
-  .version('1.1.6');
+  .version('1.1.7');
 
 // Transport options
 program

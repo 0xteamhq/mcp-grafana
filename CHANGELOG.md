@@ -1,3 +1,12 @@
+## [1.1.7](https://github.com/levalhq/mcp-grafana/compare/v1.1.6...v1.1.7) (2026-05-20)
+
+
+### Bug Fixes
+
+* use default import for jsonpath to preserve prototype methods ([#7](https://github.com/levalhq/mcp-grafana/issues/7)) ([4894d04](https://github.com/levalhq/mcp-grafana/commit/4894d049f419e32109a9bdefdf930f3a6dfbd419)), closes [#2](https://github.com/levalhq/mcp-grafana/issues/2)
+
+
+
 ## [1.1.6](https://github.com/levalhq/mcp-grafana/compare/v1.1.5...v1.1.6) (2026-05-20)
 
 
@@ -26,10 +35,6 @@
 ### Bug Fixes
 
 * resolve issues [#3](https://github.com/levalhq/mcp-grafana/issues/3) and [#4](https://github.com/levalhq/mcp-grafana/issues/4) ([#6](https://github.com/levalhq/mcp-grafana/issues/6)) ([aeb8faa](https://github.com/levalhq/mcp-grafana/commit/aeb8faae1b3d4411946b5714c0e67011d6d92f97))
-
-
-
-## [1.1.2](https://github.com/levalhq/mcp-grafana/compare/v1.1.1...v1.1.2) (2026-05-20)
 
 
 
